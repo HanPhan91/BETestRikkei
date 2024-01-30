@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>List of products</title>
+    <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/style-checkbox.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>List of products</h1>
+            </div>
+            <div>
+                <button id="btnAddNewProduct" class="btn btn-outline-light">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add New Product</span>
+                </button>
+
+                <a href="/logout">
+                    <button class="btn btn-outline-light">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </button>
+                </a>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="hiddenCB">
+                <h3>Make your choice(s)</h3>
+
+                <div id="categoryCbList"></div>
+            </div>
+
+            <table id="tbProduct" class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="text-center">#</th>
+                        <th class="text-center">Title</th>
+                        <th class="text-center">Price</th>
+                        <th class="text-center">Description</th>
+                        <th class="text-center">Category</th>
+                        <th colspan="2" class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <th:block th:replace="product/modalCreate :: modalCreate"/>
+
+    <script src="/assets/jquery/jquery-v3.6.0.min.js"></script>
+    <script src="/assets/jquery/jquery.validate.min.js"></script>
+    <script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/assets/sweetalert/sweetalert2.all.min.js"></script>
+
+    <script src="/assets/js/app.page.js"></script>
+
+    <script>
+        const page = {
+            urls: {
+                getAllCategories: App.BASE_URL_CATEGORY,
+                getAllProducts: App.BASE_URL_PRODUCT,
+                filterProductByCategoryId: App.BASE_URL_PRODUCT + "/filter-by-category-id",
+                createProduct: App.BASE_URL_PRODUCT
+            },
+            elements: {},
+            loadData: {},
+            commands: {}
+        }
+
+        let categoryArr = []
+
+        page.commands.getAllProducts = () => {
+            $.ajax({
+                headers: {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                },
+                type: "GET",
+                url: page.urls.getAllProducts
+            })
+                .done((data) => {
+                    $("#tbProduct tbody").empty();
+
+                    $.each(data, (i, item) => {
+                        const str = page.commands.renderProduct(item);
+                        $("#tbProduct tbody").prepend(str);
+                    });
+                })
+                .fail((jqXHR) => {
+                    console.log(jqXHR)
+                })
+        }
+
+        page.commands.getAllCategories = () => {
+            $.ajax({
+                url: page.urls.getAllCategories
+            })
+                .done((data) => {
+                    page.commands.drawCategoryCheckboxList(data);
+
+                    $("#categoryCre").empty();
+
+                    $.each(data, (i, item) => {
+                        let str = `<option value="${item.id}">${item.title}</option>`;
+                        $("#categoryCre").append(str);
+                    });
+                })
+                .fail((jqXHR) => {
+                    console.log(jqXHR)
+                })
+        }
+
+        page.commands.drawCategoryCheckboxList = (categories) => {
+            let str = ``
+            $.each(categories, (i, item) => {
+                str += `<input type="checkbox" name="category" id="cb${item.id}" value="${item.id}" /><label for="cb${item.id}">${item.title}</label>`
+            })
+            $("#categoryCbList").empty().append(str);
+        }
+
+        page.commands.handleClickCategoryCheckbox = () => {
+            $('#categoryCbList').on('click', 'input[name="category"]', function () {
+                const categoryId = this.value
+                if (this.checked) {
+                    categoryArr.push(categoryId)
+                }
+                else {
+                    categoryArr = categoryArr.filter((item) => item !== categoryId)
+                }
+
+                page.commands.filterProductByCategoryId();
+            })
+        }
+
+        page.commands.getAllProductsFilter = () => {
+            const obj = {
+                categoryArr
+            }
+
+            $.ajax({
+                headers: {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                },
+                type: "POST",
+                url: page.urls.filterProductByCategoryId,
+                data: JSON.stringify(obj)
+            })
+                .done((data) => {
+                    $("#tbProduct tbody").empty();
+
+                    $.each(data, (i, item) => {
+                        const str = page.commands.renderProduct(item);
+                        $("#tbProduct tbody").prepend(str);
+                    });
+                })
+                .fail((jqXHR) => {
+                    console.log(jqXHR)
+                })
+        }
+
+        page.commands.filterProductByCategoryId = () => {
+            if (categoryArr.length > 0) {
+                page.commands.getAllProductsFilter()
+            }
+            else {
+                page.commands.getAllProducts();
+            }
+        }
+
+        page.commands.renderProduct = (item) => {
+            return `
+                <tr data-id="${item.id}">
+                    <td class="text-center">${item.id}</td>
+                    <td class="text-left">${item.title}</td>
+                    <td class="text-end">${item.price}</td>
+                    <td class="text-left">${item.description}</td>
+                    <td class="text-center">${item.category.title}</td>
+                    <td>
+                        <button class="btn btn-outline-secondary">
+                            Update
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline-danger">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        page.commands.createProduct = () => {
+            const title = $("#titleCre").val()
+            const price = $("#priceCre").val()
+            const description = $("#descriptionCre").val()
+            const categoryId = $("#categoryCre").val()
+
+            const product = {
+                title,
+                price,
+                description,
+                categoryId
+            }
+
+            $.ajax({
+                headers: {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                },
+                type: "POST",
+                url: page.urls.createProduct,
+                data: JSON.stringify(product)
+            })
+                .done((item) => {
+                    const str = `
+                        <tr data-id="${item.id}">
+                            <td class="text-center">${item.id}</td>
+                            <td class="text-left">${item.title}</td>
+                            <td class="text-end">${item.price}</td>
+                            <td class="text-left">${item.description}</td>
+                            <td class="text-center">${item.category.title}</td>
+                            <td>
+                                <button class="btn btn-outline-secondary">
+                                    Update
+                                </button>
+                            </td>
+                            <td>
+                                <button class="btn btn-outline-danger">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+
+                    $("#tbProduct tbody").prepend(str);
+
+                    $("#modalCreateProduct").modal("hide");
+
+                    App.SweetAlert.showSuccessAlert("New product added successfully");
+                })
+                .fail((jqXHR) => {
+                    let str = ``;
+
+                    if (jqXHR.status === 401) {
+                        str += `<label id="message-error" class="error" for="message">${App.AlertMessageEn.ERROR_401}</label>`;
+                    } else {
+                        if (jqXHR.status === 403) {
+                            str += `<label id="message-error" class="error" for="message">${App.AlertMessageEn.ERROR_403}</label>`;
+                        } else {
+                            if (jqXHR.responseJSON) {
+                                if (jqXHR.responseJSON.message) {
+                                    str += `<label id="message-error" class="error" for="message">${jqXHR.responseJSON.message}</label>`;
+                                } else {
+                                    $.each(jqXHR.responseJSON, function (key, value) {
+                                        str += `<label id="${key}-error" class="error" for="${key}">${value}</label>`;
+                                        $("#" + key).addClass("error");
+                                    });
+                                }
+                            } else {
+                                str += `<label id="message-error" class="error" for="message">${App.AlertMessageEn.ERROR_500}</label>`;
+                            }
+                        }
+                    }
+
+                    $("#modalCreateProduct .modal-body .modal-alert-danger").empty().removeClass("hide").addClass("show").html(str);
+                })
+        }
+
+        page.initializeControlEvent = () => {
+            $("#btnAddNewProduct").on('click', () => {
+                $("#modalCreateProduct").modal("show");
+            })
+
+            $("#btnCreateProduct").on("click", () => {
+                page.commands.createProduct();
+            })
+
+            page.commands.handleClickCategoryCheckbox();
+
+            $("#modalCreateProduct").on("hidden.bs.modal", () => {
+                $("#modalCreateProduct .modal-body .modal-alert-danger").empty().removeClass("show").addClass("hide");
+                $("#frmCreateProduct").find("input.error").removeClass("error");
+                $("#frmCreateProduct")[0].reset();
+            })
+        }
+
+        page.loadData = () => {
+            page.commands.getAllProducts();
+
+            page.commands.getAllCategories();
+        }
+
+        $(() => {
+            page.loadData();
+
+            page.initializeControlEvent();
+        })
+    </script>
+</body>
+</html>

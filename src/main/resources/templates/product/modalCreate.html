@@ -1,0 +1,49 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<th:block th:fragment="modalCreate">
+    <div id="modalCreateProduct" class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-alert-danger hide"></div>
+                    <form id="frmCreateProduct" class="form-group" method="POST">
+                        <div class="row mt-3">
+                            <div class="col-lg-6">
+                                <label class="fw-bold mb-1" for="titleCre">Title</label>
+                                <input type="text" id="titleCre" class="form-control">
+                            </div>
+                            <div class="col-lg-6">
+                                <label class="fw-bold mb-1" for="priceCre">Price</label>
+                                <input type="number" id="priceCre" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row mt-3 mb-3">
+                            <div class="col-lg-6">
+                                <label class="fw-bold mb-1" for="descriptionCre">Description</label>
+                                <input type="text" id="descriptionCre" class="form-control">
+                            </div>
+                            <div class="col-lg-6">
+                                <label class="fw-bold mb-1" for="categoryCre">Category</label>
+                                <select id="categoryCre" class="form-select">
+                                    <option value="1">Apple</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="btnCreateProduct" class="btn btn-outline-primary">
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        Create product
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</th:block>
+</html>
